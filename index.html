@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leitor de QR Code</title>
+    <style>
+        video {
+            width: 100%;
+            height: auto;
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Leitor de QR Code</h1>
+<button id="startButton">Abrir Câmera</button>
+<video id="video" autoplay></video>
+<p id="result"></p>
+
+<script src="https://unpkg.com/html5-qrcode/minified/html5-qrcode.min.js"></script>
+
+<script>
+    const video = document.getElementById('video');
+    const resultParagraph = document.getElementById('result');
+
+    async function startCamera() {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        video.srcObject = stream;
+        video.setAttribute('playsinline', true); 
+        video.play();
+        requestAnimationFrame(scanQRCode);
+    }
+
+    function scanQRCode() {
+        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+        
+        console.log(`QR Code detectado: ${decodedText}`);
+        alert(`QR Code detectado: ${decodedText}`);
+        
+        
+        html5QrcodeScanner.clear();
+    };
+
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+    
+    const html5QrcodeScanner = new Html5Qrcode("reader");
+    html5QrcodeScanner.start(
+        { facingMode: "environment" }, 
+        config,
+        qrCodeSuccessCallback
+    ).catch(err => {
+        console.error(`Erro ao iniciar o scanner: ${err}`);
+    });
+
+    }
+
+    document.getElementById('startButton').addEventListener('click', startCamera);
+</script>
+
+</body>
+</html>
+
