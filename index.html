@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Leitura de QR Code</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+</head>
+<body>
+    <!-- Botão para iniciar a câmera -->
+    <button id="accessCameraButton">Acessar Câmera</button>
+    
+    <!-- Elementos de vídeo e de resultado do QR Code -->
+    <video id="video" autoplay style="display: none;"></video>
+    <p id="result">QR Code lido: </p>
+
+    <script>
+        const video = document.getElementById('video');
+        const resultParagraph = document.getElementById('result');
+        const accessCameraButton = document.getElementById('accessCameraButton');
+        let cameraPermissionGranted = false; // Estado para verificar se a permissão foi dada
+
+        // Função para inicializar a câmera
+        async function startCamera() {
+            try {
+                // Solicitar permissão apenas na primeira vez
+                if (!cameraPermissionGranted) {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                    cameraPermissionGranted = true; // Marcar que a permissão foi dada
+                    video.srcObject = stream;
+                    video.setAttribute("playsinline", true); // Necessário para funcionar no iOS
+                    video.style.display = "block"; // Exibe o vídeo quando a câmera é ativada
+                    requestAnimationFrame(scanQRCode); // Inicia a leitura do QR Code
+                } else {
+                    // Se a permissão já foi concedida, apenas inicia a câmera
+                    const stream = video.srcObject;
+                    if (stream && stream.active) {
+                        video.style.display = "block"; // Exibe o vídeo novamente caso a câmera já esteja ativa
+                        requestAnimationFrame(scanQRCode); // Recomeça a leitura do QR Code
+                    } else {
+                        // Caso a câmera tenha sido parada, reinicia o processo
+                        startCamera();
+                    }
+                }
+            } catch (error) {
+                console.error("Erro ao acessar a câmera:", error);
+            }
+        }
+
+        // Função para escanear o QR Code
+        function scanQRCode() {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = video.videoHeight;
+                canvas.width = video.videoWidth;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, canvas.width, canvas.height);
+
+                if (code) {
+                    resultParagraph.textContent = `QR Code lido: ${code.data}`;
+                    // Para a câmera após a leitura do QR Code
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                    video.style.display = "none"; // Oculta o vídeo após a leitura do QR Code
+                }
+            }
+            requestAnimationFrame(scanQRCode);
+        }
+
+        // Evento de clique no botão para acessar a câmera
+        accessCameraButton.addEventListener('click', () => {
+            startCamera();
+            accessCameraButton.style.display = "none"; // Oculta o botão após iniciar a câmera
+        });
+    </script>
+</body>
+</html>
